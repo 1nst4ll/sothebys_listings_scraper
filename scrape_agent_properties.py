@@ -11,7 +11,7 @@ async def scrape_property_links(agent_id):
     Scrapes property links for a given agent ID and saves them to a CSV file.
     Returns the sanitized agent name used for the filename.
     """
-    url = f'https://www.sothebysrealty.com/turksandcaicossir/eng/sales/int/{agent_id}'
+    url = f'https://www.sothebysrealty.com/eng/sales/int/{agent_id}'
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -20,18 +20,21 @@ async def scrape_property_links(agent_id):
         print(f"Navigating to {url}")
         await page.goto(url, wait_until='networkidle')
 
-        marketing_text_element = await page.query_selector('p:has-text("Showing listings marketed by")')
-        agent_name = "unknown_agent"
-        if marketing_text_element:
-            full_text = await marketing_text_element.text_content()
-            if "Showing listings marketed by" in full_text:
-                name_part = full_text.split("Showing listings marketed by", 1)[1].strip()
-                agent_name = name_part.split('.')[0].strip()
+        # Find the element with the data-item-name attribute to get the agent name dynamically.
+        agent_name_element = await page.query_selector('[data-item-name]')
+        agent_name = "unknown_agent" # Default name
+
+        if agent_name_element:
+            agent_name = await agent_name_element.get_attribute('data-item-name')
+            if agent_name:
+                agent_name = agent_name.strip()
                 print(f"Scraped agent name: {agent_name}")
             else:
-                print("Found element with 'Showing listings marketed by' but text format is unexpected.")
+                agent_name = "unknown_agent"
+                print("Found element with data-item-name attribute but it was empty. Using default name.")
         else:
-            print("Could not find element containing the text 'Showing listings marketed by'. Using default name.")
+            agent_name = "unknown_agent"
+            print("Could not find element with data-item-name attribute. Using default name.")
 
         print("Scrolling to load all properties...")
         previous_height = -1
