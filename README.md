@@ -35,7 +35,7 @@ The script takes an agent ID as input, scrapes the links to all properties liste
 
 ## Usage
 
-1.  Open your terminal and navigate to the project directory (`d:/ClaudeMCP/!projects/mangoscraper`).
+1.  Open your terminal and navigate to the project directory.
 2.  Run the script using the following command:
 
     ```bash
