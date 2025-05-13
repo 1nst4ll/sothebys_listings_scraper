@@ -7,6 +7,7 @@ The script takes an agent ID as input, scrapes the links to all properties liste
 ## Features
 
 *   Scrapes property links for a given agent ID.
+*   Includes the agent's name and a fixed 'Real Estate' category in the output.
 *   Extracts detailed information for each property (Price, Bedrooms, Bathrooms, Sqft, Property Type, Status, etc.).
 *   Scrapes up to 60 image links per property.
 *   Saves the scraped data into two separate CSV files: one for links and one for detailed property information.
@@ -50,7 +51,7 @@ The script takes an agent ID as input, scrapes the links to all properties liste
 The script will generate two CSV files in the project directory:
 
 1.  `[sanitized_agent_name]_links.csv`: Contains the list of property names, locations, and links for the specified agent.
-2.  `[sanitized_agent_name]_properties.csv`: Contains the detailed information scraped for each property, including up to 60 image links.
+2.  `[sanitized_agent_name]_properties.csv`: Contains the agent name, category ('Real Estate'), and detailed information scraped for each property, including up to 60 image links.
 
 Replace `[sanitized_agent_name]` with the actual name of the agent, sanitized for use in a filename (e.g., spaces replaced with underscores).
 

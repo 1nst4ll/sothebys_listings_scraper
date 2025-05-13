@@ -110,7 +110,7 @@ async def scrape_property_links(agent_id):
 
         return sanitized_agent_name
 
-async def scrape_details_from_links(input_csv_path, output_csv_path):
+async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path):
     """
     Scrapes property details from links in an input CSV and saves them to an output CSV.
     """
@@ -146,7 +146,7 @@ async def scrape_details_from_links(input_csv_path, output_csv_path):
         page = await browser.new_page()
 
         with open(output_csv_path, 'w', newline='', encoding='utf-8') as outfile:
-            fieldnames = ['Property Name', 'Property Link', 'Property ID', 'MLS#', 'Price', 'Bedrooms', 'Full Bathrooms', 'Partial Baths', 'Total Sqft', 'Lot Size Unit', 'Lot Size', 'Property Type', 'Status', 'Marketed By', 'Style', 'Cooling', 'Interior Features', 'Additional Features', 'Google Map Location', 'Property Description'] + [f'Image Link {i+1}' for i in range(60)]
+            fieldnames = ['Agent Name', 'Category', 'Property Name', 'Property Link', 'Property ID', 'MLS#', 'Price', 'Bedrooms', 'Full Bathrooms', 'Partial Baths', 'Total Sqft', 'Lot Size Unit', 'Lot Size', 'Property Type', 'Status', 'Marketed By', 'Style', 'Cooling', 'Interior Features', 'Additional Features', 'Google Map Location', 'Property Description'] + [f'Image Link {i+1}' for i in range(60)]
             writer = csv.DictWriter(outfile, fieldnames=fieldnames)
             writer.writeheader()
 
@@ -363,6 +363,8 @@ async def scrape_details_from_links(input_csv_path, output_csv_path):
                     }
 
                     row_data = {
+                        'Agent Name': agent_name,
+                        'Category': 'Real Estate',
                         'Property Name': name,
                         'Property Link': link,
                         'Property ID': details['property_id'],
@@ -432,7 +434,7 @@ if __name__ == "__main__":
         output_csv = f'{sanitized_agent_name}_properties.csv'
 
         # Then scrape details from the generated links CSV
-        await scrape_details_from_links(input_csv, output_csv)
+        await scrape_details_from_links(sanitized_agent_name, input_csv, output_csv)
 
     asyncio.run(main_scrape_process(agent_id_to_scrape))
 
