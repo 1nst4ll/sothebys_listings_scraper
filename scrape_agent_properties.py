@@ -5,6 +5,7 @@ import os
 import re
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
+import json # Added json import
 
 async def scrape_property_links(agent_id):
     """
@@ -108,9 +109,9 @@ async def scrape_property_links(agent_id):
 
         await browser.close()
 
-        return sanitized_agent_name
+        return sanitized_agent_name, agent_name
 
-async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path):
+async def scrape_details_from_links(original_agent_name, input_csv_path, output_csv_path):
     """
     Scrapes property details from links in an input CSV and saves them to an output CSV.
     """
@@ -146,7 +147,7 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
         page = await browser.new_page()
 
         with open(output_csv_path, 'w', newline='', encoding='utf-8') as outfile:
-            fieldnames = ['Agent Name', 'Category', 'Property Name', 'Property Link', 'Property ID', 'MLS#', 'Price', 'Bedrooms', 'Full Bathrooms', 'Partial Baths', 'Total Sqft', 'Lot Size Unit', 'Lot Size', 'Property Type', 'Status', 'Marketed By', 'Style', 'Cooling', 'Interior Features', 'Additional Features', 'Google Map Location', 'Property Description'] + [f'Image Link {i+1}' for i in range(60)]
+            fieldnames = ['Property ID', 'MLS#', 'Status', 'Agent Name', 'Marketed By', 'Category', 'Property Type', 'Style', 'Property Name', 'Property Link', 'Price', 'Year Built', 'Bedrooms', 'Full Bathrooms', 'Partial Baths', 'Total Sqft', 'Lot Size', 'Lot Size Unit', 'Parking', 'Cooling', 'Interior Features', 'Additional Features', 'Latitude', 'Longitude', 'Property Description Title', 'Property Description'] + [f'Image Link {i+1}' for i in range(60)]
             writer = csv.DictWriter(outfile, fieldnames=fieldnames)
             writer.writeheader()
 
@@ -238,26 +239,30 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
                     html_content = await page.content()
                     soup = BeautifulSoup(html_content, 'html.parser')
 
-                    property_id = 'N/A'
-                    mls_number = 'N/A'
-                    price = 'N/A'
-                    bedrooms = 'N/A'
-                    bathrooms = 'N/A'
-                    partial_baths = 'N/A'
-                    total_sqft = 'N/A'
-                    lot_size_unit = 'N/A'
-                    lot_size = 'N/A'
-                    property_type = 'N/A'
-                    status = 'N/A'
-                    marketed_by = 'N/A'
-                    style = 'N/A'
-                    cooling = 'N/A'
-                    interior_features = 'N/A'
-                    additional_features = 'N/A'
-                    googleMapLocation = 'N/A'
-                    amenities_features = 'N/A'
-                    listing_details = 'N/A'
-                    property_description = 'N/A'
+                    property_id = ''
+                    mls_number = ''
+                    price = ''
+                    bedrooms = ''
+                    bathrooms = ''
+                    partial_baths = ''
+                    total_sqft = ''
+                    lot_size_unit = ''
+                    lot_size = ''
+                    property_type = ''
+                    status = ''
+                    marketed_by = ''
+                    style = ''
+                    cooling = ''
+                    interior_features = ''
+                    additional_features = ''
+                    latitude = ''
+                    longitude = ''
+                    amenities_features = ''
+                    listing_details = ''
+                    property_description = ''
+                    property_description_title = '' # Added property description title variable
+                    year_built = ''
+                    parking = '' # Added parking variable
 
                     column_divs = soup.select('.m-property-details-listing-info__column')
                     for column_div in column_divs:
@@ -273,6 +278,7 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
                                 if title_element and content_element:
                                     title = title_element.get_text(strip=True)
                                     content = content_element.get_text(strip=True)
+                                    print(f"Column: {column_title}, Title: {title}, Content: {content}") # Added debug print
 
                                     if column_title == 'Listing Details':
                                         if title == 'Property ID':
@@ -287,6 +293,8 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
                                             marketed_by = content
                                         elif title == 'Status':
                                             status = content
+                                        elif title == 'Year Built':
+                                            year_built = content
                                     elif column_title == 'Utilities & Building':
                                         if title == 'Style':
                                             style = content
@@ -296,14 +304,15 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
                                             lot_size_unit = content
                                         elif title == 'Lot Size':
                                             lot_size = content
+                                        elif title == 'Parking': # Added scraping for Parking
+                                            parking = content
                                         elif title == 'cooling':
                                             cooling = content
                                     elif column_title == 'Interior':
                                         if title == 'Features':
                                             interior_features = content
                                         elif title == 'Full Bathrooms':
-                                            if bathrooms == 'N/A':
-                                                bathrooms = content
+                                            bathrooms = content
                                         elif title == 'partial baths':
                                             partial_baths = content
                                         elif title == 'Bedrooms':
@@ -318,7 +327,11 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
                     if amenities_features_content:
                         amenities_features = amenities_features_content.get_text(separator=' ', strip=True)
 
-                    description_div = soup.select_one('div.description')
+                    description_title_element = soup.select_one('div.c-listing-description h2.title') # Scrape description title
+                    if description_title_element:
+                        property_description_title = description_title_element.get_text(strip=True)
+
+                    description_div = soup.select_one('div.c-listing-description div.description') # Select the description div within c-listing-description
                     if description_div:
                         property_description = description_div.get_text(strip=True)
                     else:
@@ -330,13 +343,6 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
                     if latitude_match and longitude_match:
                         latitude = latitude_match.group(1)
                         longitude = longitude_match.group(1)
-                        googleMapLocation = f"https://www.google.com/maps/search/?api=1&query={latitude},{longitude}"
-                    else:
-                        map_iframe_element = soup.select_one('iframe[src*="google.com/maps"]')
-                        if map_iframe_element:
-                            googleMapLocation = map_iframe_element['src']
-                        else:
-                            googleMapLocation = 'N/A'
 
                     details = {
                         'property_id': property_id,
@@ -348,6 +354,7 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
                         'total_sqft': total_sqft,
                         'lot_size_unit': lot_size_unit,
                         'lot_size': lot_size,
+                        'parking': parking, # Added parking to details
                         'property_type': property_type,
                         'status': status,
                         'marketed_by': marketed_by,
@@ -355,36 +362,43 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
                         'cooling': cooling,
                         'interior_features': interior_features,
                         'additional_features': additional_features,
-                        'googleMapLocation': googleMapLocation,
+                        'latitude': latitude,
+                        'longitude': longitude,
                         'amenities_features': amenities_features,
                         'listing_details': listing_details,
+                        'property_description_title': property_description_title, # Added description title to details
                         'property_description': property_description,
+                        'year_built': year_built,
                         'imageLinks': imageLinks
                     }
 
                     row_data = {
-                        'Agent Name': agent_name,
-                        'Category': 'Real Estate',
-                        'Property Name': name,
-                        'Property Link': link,
                         'Property ID': details['property_id'],
                         'MLS#': details['mls_number'],
+                        'Status': details['status'],
+                        'Agent Name': original_agent_name,
+                        'Marketed By': details['marketed_by'],
+                        'Category': 'Real Estate',
+                        'Property Type': details['property_type'],
+                        'Style': details['style'],
+                        'Property Name': name,
+                        'Property Link': link,
                         'Price': details['price'],
                         'Bedrooms': details['bedrooms'],
                         'Full Bathrooms': details['full_bathrooms'],
                         'Partial Baths': details['partial_baths'],
                         'Total Sqft': details['total_sqft'],
-                        'Lot Size Unit': details['lot_size_unit'],
                         'Lot Size': details['lot_size'],
-                        'Property Type': details['property_type'],
-                        'Status': details['status'],
-                        'Marketed By': details['marketed_by'],
-                        'Style': details['style'],
+                        'Lot Size Unit': details['lot_size_unit'],
+                        'Parking': details['parking'], # Added Parking to row_data
                         'Cooling': details['cooling'],
                         'Interior Features': details['interior_features'],
                         'Additional Features': details['additional_features'],
-                        'Google Map Location': details['googleMapLocation'],
+                        'Latitude': details['latitude'],
+                        'Longitude': details['longitude'],
+                        'Property Description Title': details['property_description_title'], # Added description title to row_data
                         'Property Description': details['property_description'],
+                        'Year Built': details['year_built'],
                     }
 
                     max_image_columns = 60
@@ -397,27 +411,31 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
                 except Exception as e:
                     print(f"Error scraping {link}: {e}")
                     error_row_data = {
+                        'Property ID': 'Error Scraping',
+                        'MLS#': '',
+                        'Status': '',
+                        'Agent Name': original_agent_name,
+                        'Marketed By': '',
+                        'Category': 'Real Estate',
+                        'Property Type': '',
+                        'Style': '',
                         'Property Name': name,
                         'Property Link': link,
-                        'Property ID': 'Error Scraping',
-                        'MLS#': 'N/A',
                         'Price': 'Error Scraping',
-                        'Bedrooms': 'N/A',
-                        'Full Bathrooms': 'N/A',
-                        'Partial Baths': 'N/A',
-                        'Total Sqft': 'N/A',
-                        'Lot Size Unit': 'N/A',
-                        'Lot Size': 'N/A',
-                        'Property Type': 'N/A',
-                        'Status': 'N/A',
-                        'Marketed By': 'N/A',
-                        'Style': 'N/A',
-                        'Cooling': 'N/A',
-                        'Interior Features': 'N/A',
-                        'Additional Features': 'N/A',
-                        'Google Map Location': 'N/A',
-                        'Amenities & Features': 'N/A',
+                        'Bedrooms': '',
+                        'Full Bathrooms': '',
+                        'Partial Baths': '',
+                        'Total Sqft': '',
+                        'Lot Size': '',
+                        'Lot Size Unit': '',
+                        'Cooling': '',
+                        'Interior Features': '',
+                        'Additional Features': '',
+                        'Latitude': 'Error Scraping',
+                        'Longitude': 'Error Scraping',
+                        'Property Description Title': 'Error Scraping', # Added description title to error data
                         'Property Description': 'Error Scraping',
+                        'Year Built': 'Error Scraping',
                     }
                     writer.writerow(error_row_data)
 
@@ -425,18 +443,29 @@ async def scrape_details_from_links(agent_name, input_csv_path, output_csv_path)
         print(f"Finished scraping. Data saved to {output_csv_path}")
 
 if __name__ == "__main__":
-    agent_id_to_scrape = input("Please enter the agent ID to scrape: ")
+    # Read agent IDs from agents.json
+    agents_file_path = 'agents.json'
+    if not os.path.exists(agents_file_path):
+        print(f"Error: agents.json not found at {agents_file_path}")
+    else:
+        with open(agents_file_path, 'r') as f:
+            agent_ids = json.load(f)
 
-    async def main_scrape_process(agent_id):
-        # Scrape links first
-        sanitized_agent_name = await scrape_property_links(agent_id)
-        input_csv = f'{sanitized_agent_name}_links.csv'
-        output_csv = f'{sanitized_agent_name}_properties.csv'
+        async def main_scrape_process(agent_id):
+            # Scrape links first
+            sanitized_agent_name, original_agent_name = await scrape_property_links(agent_id)
+            input_csv = f'{sanitized_agent_name}_links.csv'
+            output_csv = f'{sanitized_agent_name}_properties.csv'
 
-        # Then scrape details from the generated links CSV
-        await scrape_details_from_links(sanitized_agent_name, input_csv, output_csv)
+            # Then scrape details from the generated links CSV
+            await scrape_details_from_links(original_agent_name, input_csv, output_csv)
 
-    asyncio.run(main_scrape_process(agent_id_to_scrape))
+        # Loop through agent IDs and scrape
+        for agent_id_to_scrape in agent_ids:
+            print(f"Starting scraping process for agent ID: {agent_id_to_scrape}")
+            asyncio.run(main_scrape_process(agent_id_to_scrape))
+            print(f"Finished scraping process for agent ID: {agent_id_to_scrape}")
+
 
 # Instructions to run this script:
 # 1. Make sure you have Python installed.
@@ -445,8 +474,9 @@ if __name__ == "__main__":
 #    pip install playwright beautifulsoup4
 # 4. Install Playwright browsers:
 #    playwright install
-# 5. Run the script:
+# 5. Create an 'agents.json' file in the same directory with a list of agent IDs, e.g., ["agent_id_1", "agent_id_2"].
+# 6. Run the script:
 #    python scrape_agent_properties.py
 #
-# This script will scrape property links for the given agent ID, save them to a CSV,
+# This script will read agent IDs from agents.json, scrape property links for each agent, save them to a CSV,
 # and then scrape details for each property from the links, saving the details to another CSV.
