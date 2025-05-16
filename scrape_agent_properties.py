@@ -278,7 +278,6 @@ async def scrape_details_from_links(original_agent_name, input_csv_path, output_
                                 if title_element and content_element:
                                     title = title_element.get_text(strip=True)
                                     content = content_element.get_text(strip=True)
-                                    print(f"Column: {column_title}, Title: {title}, Content: {content}") # Added debug print
 
                                     if column_title == 'Listing Details':
                                         if title == 'Property ID':
@@ -374,8 +373,6 @@ async def scrape_details_from_links(original_agent_name, input_csv_path, output_
                         'imageLinks': imageLinks
                     }
 
-                    print(f"Debug: year_built before details dict: {year_built}") # Added debug print
-                    print(f"Debug: details['year_built'] before row_data: {details['year_built']}") # Added debug print
 
                     row_data = {
                         'Property ID': details['property_id'],
@@ -467,9 +464,7 @@ if __name__ == "__main__":
 
         # Loop through agent IDs and scrape
         for agent_id_to_scrape in agent_ids:
-            print(f"Starting scraping process for agent ID: {agent_id_to_scrape}")
             asyncio.run(main_scrape_process(agent_id_to_scrape))
-            print(f"Finished scraping process for agent ID: {agent_id_to_scrape}")
 
 
 # Instructions to run this script:

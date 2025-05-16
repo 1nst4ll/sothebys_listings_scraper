@@ -7,8 +7,8 @@ The script takes an agent ID as input, scrapes the links to all properties liste
 ## Features
 
 *   Scrapes property links for a given agent ID.
-*   Includes the agent's name and a fixed 'Real Estate' category in the output.
-*   Extracts detailed information for each property (Price, Bedrooms, Bathrooms, Sqft, Property Type, Status, etc.).
+*   Includes the agent's name (dynamically scraped) and a fixed 'Real Estate' category in the output.
+*   Extracts detailed information for each property, including: Property ID, MLS#, Status, Marketed By, Property Type, Style, Price, Year Built, Bedrooms, Full Bathrooms, Partial Baths, Total Sqft, Lot Size, Lot Size Unit, Parking, Cooling, Interior Features, Additional Features, Latitude, Longitude, Property Description Title, and Property Description.
 *   Scrapes up to 60 image links per property.
 *   Saves the scraped data into two separate CSV files: one for links and one for detailed property information.
 
@@ -36,15 +36,24 @@ The script takes an agent ID as input, scrapes the links to all properties liste
 
 ## Usage
 
-1.  Open your terminal and navigate to the project directory.
-2.  Run the script using the following command:
+1.  Create an `agents.json` file in the project directory. This file should contain a JSON array of agent IDs you want to scrape, like this:
+
+    ```json
+    [
+      "agent_id_1",
+      "agent_id_2",
+      "agent_id_3"
+    ]
+    ```
+
+2.  Open your terminal and navigate to the project directory.
+3.  Run the script using the following command:
 
     ```bash
     python scrape_agent_properties.py
     ```
 
-3.  The script will prompt you to enter the agent ID you want to scrape.
-4.  Enter the agent ID and press Enter.
+4.  The script will read the agent IDs from `agents.json` and process each one sequentially.
 
 ## Output
 
@@ -61,4 +70,4 @@ Feel free to contribute to this project by submitting issues or pull requests.
 
 ## License
 
-[Specify your license here, e.g., MIT, Apache 2.0, etc.]
+MIT
