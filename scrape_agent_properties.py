@@ -308,6 +308,8 @@ async def scrape_details_from_links(original_agent_name, input_csv_path, output_
                                             parking = content
                                         elif title == 'cooling':
                                             cooling = content
+                                        elif title == 'Year Built': # Added scraping for Year Built under Utilities & Building
+                                            year_built = content
                                     elif column_title == 'Interior':
                                         if title == 'Features':
                                             interior_features = content
@@ -371,6 +373,9 @@ async def scrape_details_from_links(original_agent_name, input_csv_path, output_
                         'year_built': year_built,
                         'imageLinks': imageLinks
                     }
+
+                    print(f"Debug: year_built before details dict: {year_built}") # Added debug print
+                    print(f"Debug: details['year_built'] before row_data: {details['year_built']}") # Added debug print
 
                     row_data = {
                         'Property ID': details['property_id'],
